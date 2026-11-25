@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JARVIS AI — Autonomous Command Core</title>
+  <style>
+    :root {
+      --bg: #050a14;
+      --panel: #0b1426;
+      --panel-2: #101c34;
+      --border: #1e3358;
+      --accent: #38bdf8;
+      --accent-2: #22d3ee;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(circle at top right, #0d213f 0%, var(--bg) 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 20, 38, 0.85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; letter-spacing: 0.08em; }
+    .orb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle, #7dd3fc, #0284c7);
+      box-shadow: 0 0 14px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.7; } }
+    .status-pill {
+      font-size: 0.8rem; color: var(--accent-2); border: 1px solid var(--border);
+      background: var(--panel-2); padding: 0.35rem 0.75rem; border-radius: 999px;
+    }
+    main { max-width: 1180px; margin: 1.5rem auto; padding: 0 1rem; display: grid; gap: 1rem; }
+    .tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tab-btn {
+      background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+      padding: 0.55rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    .tab-btn.active { background: linear-gradient(135deg, #0284c7, #0891b2); color: #fff; border-color: transparent; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.15rem; display: none; flex-direction: column; gap: 0.9rem;
+    }
+    .card.active { display: flex; }
+    .row { display: flex; gap: 0.65rem; flex-wrap: wrap; align-items: center; }
+    input, select, textarea {
+      background: #070e1c; color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.95rem; flex: 1; min-width: 180px;
+    }
+    textarea { min-height: 85px; font-family: inherit; }
+    button.action {
+      background: linear-gradient(135deg, #0ea5e9, #06b6d4); color: #04101f;
+      border: none; padding: 0.65rem 1.1rem; border-radius: 10px; font-weight: 700; cursor: pointer;
+    }
+    button.secondary {
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+      padding: 0.65rem 1rem; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    button.mic-on { background: var(--bad); color: #fff; border-color: transparent; }
+    pre, .output-box {
+      background: #040812; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.95rem; overflow: auto; max-height: 460px; white-space: pre-wrap;
+      font-family: ui-monospace, Consolas, monospace; font-size: 0.88rem; line-height: 1.45;
+    }
+    .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.78rem; font-weight: 700; }
+    .VERIFIED { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .PARTIALLY_SUPPORTED { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .UNVERIFIED { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .source-item { border-left: 3px solid var(--accent); padding: 0.45rem 0.75rem; background: #070f20; border-radius: 6px; margin-bottom: 0.5rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="orb"></span><span>JARVIS AI // AUTONOMOUS CORE</span></div>
+  <div class="row">
+    <label style="font-size:0.85rem;color:var(--muted);display:flex;align-items:center;gap:6px;">
+      <input type="checkbox" id="voiceSpeak" style="min-width:auto;flex:0;" /> Speak Replies
+    </label>
+    <span class="status-pill" id="healthBadge">Connecting...</span>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="chat">Ask &amp; Voice</button>
+    <button class="tab-btn" data-tab="verify">GitHub &amp; Web Verifier</button>
+    <button class="tab-btn" data-tab="twist">Website Twister</button>
+    <button class="tab-btn" data-tab="task">Autonomous Task Agent</button>
+    <button class="tab-btn" data-tab="train">Train &amp; Teach Brain</button>
+  </div>
+
+  <!-- CHAT & VOICE -->
+  <section class="card active" id="tab-chat">
+    <div class="row">
+      <input id="chatInput" placeholder="Ask anything, search GitHub/web, or speak a command..." />
+      <label style="font-size:0.85rem;color:var(--muted);display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="chatVerify" style="min-width:auto;flex:0;" /> Cross-Verify
+      </label>
+      <button class="secondary" id="micBtn">🎙️ Voice</button>
+      <button class="action" id="chatSend">Ask Jarvis</button>
+    </div>
+    <div class="output-box" id="chatOut">JARVIS ready. Ask a question or click Voice to command hands-free.</div>
+  </section>
+
+  <!-- VERIFY -->
+  <section class="card" id="tab-verify">
+    <div class="row">
+      <input id="verifyInput" placeholder="Claim or topic to verify across GitHub, Web, Wikipedia, StackOverflow & arXiv..." />
+      <button class="action" id="verifyBtn">Verify Everywhere</button>
+    </div>
+    <div id="verifySummary"></div>
+    <div id="verifySources"></div>
+  </section>
+
+  <!-- WEBSITE TWISTER -->
+  <section class="card" id="tab-twist">
+    <div class="row">
+      <input id="twistUrl" placeholder="https://news.ycombinator.com" />
+      <select id="twistFormat" style="max-width:160px;">
+        <option value="json">JSON</option>
+        <option value="csv">CSV</option>
+        <option value="markdown">Markdown</option>
+        <option value="text">Clean Text</option>
+      </select>
+      <input id="twistSelector" placeholder="Optional CSS selector (e.g. a.titleline, table tr, h2)" />
+      <button class="action" id="twistBtn">Twist Website</button>
+      <button class="secondary" id="twistDownload">Download Output</button>
+    </div>
+    <pre id="twistOut">Enter any website URL to extract tables, links, headings, prices, JSON-LD, or custom CSS selectors.</pre>
+  </section>
+
+  <!-- AUTONOMOUS TASK -->
+  <section class="card" id="tab-task">
+    <div class="row">
+      <textarea id="taskGoal" placeholder="Example: Search GitHub for fastapi rate limiter, verify best library, and write summary.md"></textarea>
+    </div>
+    <div class="row">
+      <button class="action" id="taskBtn">Execute Autonomously</button>
+    </div>
+    <pre id="taskOut">Jarvis will decompose your goal into steps, select tools, execute, and verify.</pre>
+  </section>
+
+  <!-- TRAIN & TEACH -->
+  <section class="card" id="tab-train">
+    <div class="row">
+      <input id="teachPhrase" placeholder="Phrase (e.g. 'open workspace dashboard')" />
+      <input id="teachIntent" placeholder="Intent (e.g. 'system_control' or custom label)" value="chat_general" />
+      <input id="teachResp" placeholder="Expected response or fact to remember" />
+      <button class="action" id="teachBtn">Teach &amp; Retrain</button>
+    </div>
+    <div class="row">
+      <input id="trainGithub" placeholder="GitHub repo slug (e.g. tiangolo/fastapi)" />
+      <input id="trainFolder" placeholder="Local folder path to index" />
+      <button class="secondary" id="trainIngestBtn">Ingest Sources into Brain</button>
+    </div>
+    <pre id="trainOut">Teach new phrases/corrections or ingest local folders &amp; GitHub repositories into Jarvis's neural + RAG brain.</pre>
+  </section>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  let lastTwistFormatted = '';
+  let lastTwistExt = 'json';
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('active');
+    };
+  });
+
+  async function api(path, body = null) {
+    const res = await fetch(path, body ? {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    } : {});
+    return res.json();
+  }
+
+  async function loadHealth() {
+    try {
+      const h = await api('/v1/health');
+      $('healthBadge').textContent = `ONLINE | ${h.provider} | ${h.memory.knowledge_chunks} chunks | ${h.tools.length} tools`;
+    } catch {
+      $('healthBadge').textContent = 'OFFLINE';
+    }
+  }
+  loadHealth();
+
+  function speakText(txt) {
+    if (!$('voiceSpeak').checked || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt.replace(/[*`#]/g, ' ').slice(0, 350));
+    window.speechSynthesis.speak(u);
+  }
+
+  async function runChat() {
+    const q = $('chatInput').value.trim();
+    if (!q) return;
+    $('chatOut').textContent = 'Thinking & verifying...';
+    const r = await api('/v1/ask', { query: q, verify: $('chatVerify').checked });
+    $('chatOut').textContent = `[Intent: ${r.intent} (${(r.confidence*100).toFixed(1)}%) | Verdict: ${r.verdict} | Provider: ${r.provider}]\n\n${r.answer}`;
+    speakText(r.answer);
+  }
+  $('chatSend').onclick = runChat;
+  $('chatInput').onkeydown = e => { if (e.key === 'Enter') runChat(); };
+
+  // Browser Web Speech Voice Input
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRec) {
+    const rec = new SpeechRec();
+    rec.lang = 'en-US';
+    rec.onresult = ev => {
+      $('chatInput').value = ev.results[0][0].transcript;
+      $('micBtn').classList.remove('mic-on');
+      runChat();
+    };
+    rec.onerror = () => $('micBtn').classList.remove('mic-on');
+    $('micBtn').onclick = () => {
+      $('micBtn').classList.add('mic-on');
+      rec.start();
+    };
+  } else {
+    $('micBtn').disabled = true;
+    $('micBtn').title = 'Web Speech API unavailable in this browser; use python jarvis_ai.py voice';
+  }
+
+  $('verifyBtn').onclick = async () => {
+    const q = $('verifyInput').value.trim();
+    if (!q) return;
+    $('verifySummary').innerHTML = 'Querying GitHub, DuckDuckGo, Wikipedia, StackOverflow & arXiv...';
+    $('verifySources').innerHTML = '';
+    const r = await api('/v1/verify', { query: q });
+    $('verifySummary').innerHTML = `<span class="badge ${r.verdict}">${r.verdict}</span> Confidence: <b>${(r.confidence*100).toFixed(1)}%</b> | Families: ${(r.source_families||[]).join(', ')}`;
+    $('verifySources').innerHTML = (r.sources || []).map((s, i) => `
+      <div class="source-item">
+        <div><b>[${i+1}] ${s.title || 'Source'}</b> <small>(${s.source_type}, rel=${s.relevance})</small></div>
+        <div><a href="${s.url}" target="_blank" rel="noopener">${s.url}</a></div>
+        <div style="color:var(--muted);font-size:0.86rem;margin-top:4px;">${(s.snippet||'').slice(0,300)}</div>
+      </div>
+    `).join('') || '<div>No external sources returned.</div>';
+  };
+
+  $('twistBtn').onclick = async () => {
+    const url = $('twistUrl').value.trim();
+    if (!url) return;
+    const format = $('twistFormat').value;
+    const selector = $('twistSelector').value.trim() || null;
+    $('twistOut').textContent = 'Fetching and twisting DOM...';
+    const r = await api('/v1/twist', { url, format, selector });
+    lastTwistFormatted = r.formatted || JSON.stringify(r, null, 2);
+    lastTwistExt = format === 'csv' ? 'csv' : (format === 'markdown' ? 'md' : (format === 'text' ? 'txt' : 'json'));
+    $('twistOut').textContent = lastTwistFormatted;
+  };
+
+  $('twistDownload').onclick = () => {
+    if (!lastTwistFormatted) return;
+    const blob = new Blob([lastTwistFormatted], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `twisted_output.${lastTwistExt}`;
+    a.click();
+  };
+
+  $('taskBtn').onclick = async () => {
+    const goal = $('taskGoal').value.trim();
+    if (!goal) return;
+    $('taskOut').textContent = 'Executing autonomous plan...';
+    const r = await api('/v1/task', { goal });
+    $('taskOut').textContent = JSON.stringify(r, null, 2);
+    loadHealth();
+  };
+
+  $('teachBtn').onclick = async () => {
+    const phrase = $('teachPhrase').value.trim();
+    const intent = $('teachIntent').value.trim() || 'chat_general';
+    const response = $('teachResp').value.trim();
+    if (!phrase) return;
+    const r = await api('/v1/teach', { phrase, intent, response });
+    $('trainOut').textContent = JSON.stringify(r, null, 2);
+    loadHealth();
+  };
+
+  $('trainIngestBtn').onclick = async () => {
+    const github_repo = $('trainGithub').value.trim() || null;
+    const folder = $('trainFolder').value.trim() || null;
+    $('trainOut').textContent = 'Ingesting and indexing into Jarvis brain...';
+    const r = await api('/v1/train', { github_repo, folder });
+    $('trainOut').textContent = JSON.stringify(r, null, 2);
+    loadHealth();
+  };
+</script>
+</body>
+</html>
